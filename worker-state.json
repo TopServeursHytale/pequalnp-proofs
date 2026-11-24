@@ -30,10 +30,10 @@
     "reason": "other",
     "http_status": 200
   },
-  "next_attempt_not_before_utc": null,
+  "next_attempt_not_before_utc": "2026-11-24T11:15:00Z",
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": "Assigned task is outside the bounded tactic worker's capabilities",
+  "reason": "Automatic task allocation temporarily deferred while the interactive research team works on live leased tasks; resume when the interactive session releases them.",
   "updated_at": "2026-11-24T08:59:43.175750Z",
   "schema": 1
 }
