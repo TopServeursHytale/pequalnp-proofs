@@ -3,13 +3,22 @@
   "run_id": "45360259292",
   "run_url": "https://github.com/TopServeursHytale/pequalnp-proofs/actions/runs/45360259292",
   "upstream_sha": "5bd7a514488be182ebbef5045c4497691668f475",
-  "gap": null,
+  "gap": {
+    "id": "L-meta-2312",
+    "title": "It is false that: a step toward: Petersen graph minus a vertex: no AND, OR (fan-in two), NOT circuit with at most 15 gates and first gate NOT x_0 computes its edge function",
+    "file": "lean/PEqualNP/Outside/L_meta_2312.lean",
+    "module": "PEqualNP.Outside.L_meta_2312",
+    "statement": "¬ (have x1 : (Fin (9 : ℕ) → Bool) → Bool := fun (x1 : Fin (9 : ℕ) → Bool) => x1 (0 : Fin (9 : ℕ)) && x1 (1 : Fin (9 : ℕ)) || x1 (1 : Fin (9 : ℕ)) && x1 (2 : Fin (9 : ℕ)) || x1 (2 : Fin (9 : ℕ)) && x1 (3 : Fin (9 : ℕ)) || x1 (3 : Fin (9 : ℕ)) && x1 (4 : Fin (9 : ℕ)) || x1 (4 : Fin (9 : ℕ)) && x1 (0 : Fin (9 : ℕ)) || x1 (0 : Fin (9 : ℕ)) && x1 (5 : Fin (9 : ℕ)) || x1 (1 : Fin (9 : ℕ)) && x1 (6 : Fin (9 : ℕ)) || x1 (2 : Fin (9 : ℕ)) && x1 (7 : Fin (9 : ℕ)) || x1 (3 : Fin (9 : ℕ)) && x1 (8 : Fin (9 : ℕ)) || x1 (5 : Fin (9 : ℕ)) && x1 (7 : Fin (9 : ℕ)) || x1 (6 : Fin (9 : ℕ)) && x1 (8 : Fin (9 : ℕ)) || x1 (8 : Fin (9 : ℕ)) && x1 (5 : Fin (9 : ℕ)); ∀ (x2 : PEqualNP.CircuitLowerBounds.Circuit),   have x3 : List PEqualNP.CircuitLowerBounds.Gate := List.map (fun (x3 : PEqualNP.CircuitLowerBounds.Gate) => { op := x3.op, inputs := if x3.op.eval [Bool.false] = Bool.true then List.take (1 : ℕ) x3.inputs else x3.inputs : PEqualNP.CircuitLowerBounds.Gate }) (List.drop (1 : ℕ) x2.gates);   have x4 : PEqualNP.CircuitLowerBounds.Gate → Bool := fun (x4 : PEqualNP.CircuitLowerBounds.Gate) => [(0 : ℕ), (9 : ℕ)].any fun (x5 : ℕ) => x4.inputs.contains x5;   have x5 : ℕ := (List.filter x4 x3).length;   have x6 : Prop := ∃ (x6 : List PEqualNP.CircuitLowerBounds.Gate) (x7 : PEqualNP.CircuitLowerBounds.Gate) (x8 : List PEqualNP.CircuitLowerBounds.Gate), x3 = x6 ++ x7 :: x8 ∧ (x7.op = PEqualNP.CircuitLowerBounds.GateOp.and ∧ (0 : ℕ) ∈ x7.inputs ∨ x7.op = PEqualNP.CircuitLowerBounds.GateOp.or ∧ (9 : ℕ) ∈ x7.inputs) ∧ ∃ x9 ∈ x8, x4 x9 = Bool.false ∧ (10 : ℕ) + x6.length ∈ x9.inputs;   PEqualNP.MetaComplexity.FanInTwo x2 → (∀ (x8 : Fin (9 : ℕ) → Bool), (x2.wires (List.ofFn x8)).getD (9 : ℕ) Bool.false = !x8 (0 : Fin (9 : ℕ))) → PEqualNP.MetaComplexity.circuitFun (9 : ℕ) x2 = x1 → x2.size ≤ (15 : ℕ) → x5 = (2 : ℕ) → ¬x6 → False)",
+    "imports": [
+      "PEqualNP.Defs"
+    ]
+  },
   "proof_branch": null,
   "proof_commit_sha": null,
   "proof_sha256": null,
-  "statement_sha256": null,
+  "statement_sha256": "cc748c29dab49b89193dd01ef904a809fe0efaea810cae22b6d4fd2b93bbfb23",
   "local_checker": null,
-  "last_lease_beat_utc": null,
+  "last_lease_beat_utc": "2026-11-24T08:59:39.926518Z",
   "submission_window_expires_at": null,
   "submission_permit": null,
   "submitted_pr_url": null,
@@ -19,7 +28,7 @@
   "next_attempt_not_before_utc": null,
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": "Environment prepared; requesting at most one ordinary task",
-  "updated_at": "2026-11-24T08:59:32.408240Z",
+  "reason": "Working on one assigned task",
+  "updated_at": "2026-11-24T08:59:40.162865Z",
   "schema": 1
 }
