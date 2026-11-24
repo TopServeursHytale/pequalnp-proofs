@@ -1,0 +1,11 @@
+{
+  "module": "PEqualNP.Outside.R_meta_2462_724",
+  "gap_id": "L-meta-2462",
+  "kind": "reduce",
+  "proof_sha256": "c6030474bbdba9fa7913602051a354cd0262ca9d0cc89597377cc216d2eb7361",
+  "statement_sha256": "07cab47dcc3e5899ea05db162e1c7b27b292b1b8fbbe8c00fac4bf1e4cfc1dff",
+  "imports": [
+    "PEqualNP.Defs"
+  ],
+  "expected_children": 2
+}
