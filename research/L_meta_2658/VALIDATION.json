@@ -1,0 +1,30 @@
+{
+  "source": "PairClean.lean",
+  "sha256": "86f4db78548929a89527a9ce2021cab43b1b564d052af7c4634e88e33f2edf91",
+  "theorem": "Research2658.pair_clean_suffices_getD",
+  "scope": "Complete proof of the first proposed child h1 in PR 5758; not a proof of L-meta-2658.",
+  "related_pull_request": "https://github.com/brilliant-hq/pequalnp-proofs/pull/5758",
+  "related_pull_request_head": "f8fe2d78eb7031ad00f660e0548f5360c1e3e547",
+  "validation_date_utc": "2026-11-24",
+  "local_project_revision": "f5e4aa53752fb1bba2aa6a121ec5226158b84f50",
+  "toolchain": "leanprover/lean4:v4.36.0",
+  "checks": {
+    "direct_compilation": {
+      "result": "passed",
+      "exit_code": 0,
+      "diagnostics": []
+    },
+    "axioms_audit": {
+      "result": "passed",
+      "exit_code": 0,
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "output": "'Research2658.pair_clean_suffices_getD' depends on axioms: [propext, Classical.choice, Quot.sound]"
+    },
+    "full_project_checker": "Not run for this standalone research lemma.",
+    "official_acceptance": "Not claimed. The proposed child had no assigned gap identifier when this artifact was prepared."
+  }
+}
