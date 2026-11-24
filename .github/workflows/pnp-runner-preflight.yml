@@ -1,0 +1,30 @@
+name: Contribution runner preflight
+
+on:
+  push:
+    branches: [pnp-worker-setup-20261124]
+    paths: [.github/workflows/pnp-runner-preflight.yml]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pnp-runner-preflight
+  cancel-in-progress: false
+
+jobs:
+  connectivity:
+    if: github.repository == 'TopServeursHytale/pequalnp-proofs' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Verify tools and read coordinator instructions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git --version
+          python3 --version
+          node --version
+          curl --fail --show-error --silent --max-time 30 https://pequalnp.com/join.txt -o /tmp/pnp-join.txt
+          test -s /tmp/pnp-join.txt
+          wc -c /tmp/pnp-join.txt
