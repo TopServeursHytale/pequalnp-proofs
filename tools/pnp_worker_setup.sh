@@ -133,6 +133,21 @@ PY
     [[ -x .lake/build/bin/checklemma ]] || fail 'the verifier was not built'
     [[ -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib.olean ]] || fail 'the full Mathlib cache is missing'
     git diff --quiet HEAD -- lakefile.toml lake-manifest.json lean-toolchain || fail 'a pinned configuration changed during setup'
+    # The isolated compiler reads dependency repositories owned by the runner.
+    # Trust only their exact canonical paths, never every repository on disk.
+    packages_dir="$upstream_dir/lean/.lake/packages"
+    [[ ! -L $packages_dir && $(readlink -f -- "$packages_dir") == "$packages_dir" ]] || fail 'package directory escaped the prepared checkout'
+    for package_dir in "$packages_dir"/*; do
+      [[ -e $package_dir || -L $package_dir ]] || continue
+      [[ ! -L $package_dir ]] || fail 'a package directory is a symbolic link'
+      [[ -d $package_dir ]] || continue
+      [[ $(readlink -f -- "$package_dir") == "$package_dir" ]] || fail 'a package path escaped the prepared checkout'
+      [[ ! -L $package_dir/.git ]] || fail 'package Git metadata is a symbolic link'
+      [[ -e $package_dir/.git ]] || continue
+      [[ -d $package_dir/.git && $(readlink -f -- "$package_dir/.git") == "$package_dir/.git" ]] || fail 'package Git metadata escaped its directory'
+      git config --file "$work_root/gitconfig" --add safe.directory "$package_dir"
+    done
+    chmod 0644 "$work_root/gitconfig"
     printf 'PNP_TC_BIN=%s\n' "$tc_bin" >> "$GITHUB_ENV"
     cache_bytes=$(du -sb "$upstream_dir/lean/.lake/packages" | awk '{print $1}')
     # One payload is capped at 8 GiB. The repository's existing cache quota is not changed.
