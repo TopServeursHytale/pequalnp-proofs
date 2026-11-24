@@ -1,5 +1,5 @@
 {
-  "phase": "waiting",
+  "phase": "finished",
   "run_id": "45359423298",
   "run_url": "https://github.com/TopServeursHytale/pequalnp-proofs/actions/runs/45359423298",
   "upstream_sha": "ae813061f972e857a9729911bcfe3877a9acc487",
@@ -28,7 +28,7 @@
   "next_attempt_not_before_utc": null,
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": "Working on one assigned task",
-  "updated_at": "2026-11-24T08:52:54.138334Z",
+  "reason": "Assigned task is outside the bounded tactic worker's capabilities",
+  "updated_at": "2026-11-24T08:52:55.410535Z",
   "schema": 1
 }
