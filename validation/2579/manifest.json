@@ -2,7 +2,7 @@
   "gap_id": "L-meta-2579",
   "kind": "reduce",
   "module": "PEqualNP.Outside.R_meta_2579_724",
-  "proof_sha256": "ff3fc8e703b88337d2ced82c35d367a6299029bb8003a045ab51d3c98218ac47",
+  "proof_sha256": "2f990d33804964052297511f959cf1167b726b452d7f9ca1d00ff18773ee8c6a",
   "statement_sha256": "d0c8a189ac4ee17a8155a0aaf935f2ab0f3875e45052134e7415e5813a1f0548",
   "imports": [
     "PEqualNP.Defs"
@@ -12,5 +12,17 @@
   "child_characters": [
     1173,
     1343
-  ]
+  ],
+  "module_inspection": {
+    "main_theorems": 1,
+    "allowed_internal_theorems": 61,
+    "foreign_declarations": 0,
+    "extraConstNames": 0
+  },
+  "previous_validation": {
+    "run_id": 45371255451,
+    "status": "REJECTED",
+    "class": "reduce-extra",
+    "corrected": "Definition expansion and congruence proofs now stay local."
+  }
 }
