@@ -30,10 +30,10 @@
     "reason": "other",
     "http_status": 200
   },
-  "next_attempt_not_before_utc": "2026-11-24T12:15:00Z",
+  "next_attempt_not_before_utc": null,
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": "Automatic allocation deferred while the sole interactive L-meta-2579 lease awaits GitHub publication access. Its keeper has a hard stop near12:04UTC; resume after12:15UTC or after the interactive controller confirms release.",
+  "reason": null,
   "updated_at": "2026-11-24T08:59:43.175750Z",
   "schema": 1
 }
