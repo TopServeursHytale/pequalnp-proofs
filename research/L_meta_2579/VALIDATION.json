@@ -1,0 +1,17 @@
+{
+  "checker_exit": 0,
+  "children": 2,
+  "gap_id": "L-meta-2579",
+  "kind": "reduce",
+  "lease_owned_by_this_job": false,
+  "module": "PEqualNP.Outside.R_meta_2579_724",
+  "proof_sha256": "2f990d33804964052297511f959cf1167b726b452d7f9ca1d00ff18773ee8c6a",
+  "statement_sha256": "d0c8a189ac4ee17a8155a0aaf935f2ab0f3875e45052134e7415e5813a1f0548",
+  "status": "accepted_by_complete_project_checker",
+  "upstream_pr_created": false,
+  "upstream_sha": "c3fc3e9c1b3923953d412d567fbd280cab8e282a",
+  "run_id": 45373414763,
+  "run_url": "https://github.com/TopServeursHytale/pequalnp-proofs/actions/runs/45373414763",
+  "proof_commit": "7d08c1c92b7085d5024a72c099e213ba760e5b7e",
+  "publication_block": "HTTP403 Resource not accessible by integration"
+}
