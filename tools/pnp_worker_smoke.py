@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 from pnp_worker import Worker, WorkerError, digest, require_checker_acceptance
 
@@ -33,6 +34,22 @@ def output_paths(upstream):
             for directory, suffixes in OUTPUT_SUFFIXES.items() for suffix in suffixes]
 
 
+def failure_excerpt(output):
+    """Keep the end of this credential-free smoke log, safely quoted and bounded."""
+    clean = "".join(char for char in output[-12000:]
+                    if char == "\n" or not unicodedata.category(char).startswith("C"))
+    remaining, lines = 6000, []
+    prefix = "SMOKE_LOG "
+    for line in reversed(clean.splitlines() or ["(checker output was empty)"]):
+        room = remaining - len(prefix) - 1
+        if room <= 0:
+            break
+        quoted = prefix + line[-room:] + "\n"
+        lines.append(quoted)
+        remaining -= len(quoted)
+    return "".join(reversed(lines))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream-dir", type=Path, required=True)
@@ -48,6 +65,7 @@ def main():
     proof = args.upstream_dir.resolve() / "lean/PEqualNP/Outside/WorkerSmoke.lean"
     outputs = output_paths(args.upstream_dir.resolve())
     result = 1
+    output = None
     try:
         if any(path.exists() or path.is_symlink() for path in [proof, *outputs]):
             raise WorkerError("Synthetic smoke source or outputs already exist; nothing was overwritten")
@@ -92,6 +110,8 @@ def main():
             except Exception:
                 print("Technical smoke failed: synthetic module cleanup was incomplete", file=sys.stderr)
                 result = 1
+    if result and output is not None:
+        print(failure_excerpt(output), end="", flush=True)
     return result
 
 
