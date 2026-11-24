@@ -1,0 +1,280 @@
+L-meta-2462 -- constructive combinatorial argument
+Author: child agent proof2462_combinatorics, 2026-11-24
+Status: mathematical proof outline, not yet Lean checked. No external submission.
+
+SUMMARY
+There is a plausible full proof with the stronger bound 5*C.size, hence ample
+slack for the required 33*C.size. The crucial operation is reverse-mode
+transposition of the circuit after retaining only degree zero and degree one
+in line variables. This creates, with linear overhead, a circuit computing all
+line coefficients as separate outputs. A C4-free multi-output lower bound then
+applies. The whole argument uses global correctness on heavy point inputs.
+
+1. MULTI-OUTPUT LEMMA
+
+Let P be finite, let (B_l)_{l in L} be subsets of P with
+  |B_l intersection B_m| <= 1 whenever l != m.
+Consider a finite acyclic binary AND/OR circuit on variables (x_p)_{p in P},
+with constants 0 and 1 permitted and arbitrary output wires h_l. Assume
+  h_l(1_{P\B_l}) = 0.
+For a wire v let
+  S(v) = {p in P : h_v(1_{p}) = 1}.
+Then
+  sum_l |S(h_l)| <= number of OR gates + #{l : S(h_l) nonempty}.
+
+Proof. Call a wire v l-compatible if h_v(1_{P\B_l})=0. Monotonicity gives
+S(v) subset B_l for every compatible wire. Consequently a wire with at least
+two singleton points can be compatible with at most one l.
+
+Fix an output l with |S(h_l)|>=2. Recursively traverse backwards from h_l.
+Stop at any wire with |S(v)|<=1, treating that wire as a boundary leaf labelled
+by its singleton point, if any. At an OR gate v, both children are compatible;
+keep both children. At an AND gate v, at least one child is compatible;
+choose one such child and discard the other edge. The singleton relations are
+  S(a OR b)=S(a) union S(b),
+  S(a AND b)=S(a) intersection S(b).
+Thus the chosen AND child contains all singleton points of its parent, and
+has at least two points if the parent does. The construction is acyclic.
+Every singleton in S(h_l) reaches a boundary singleton leaf. One may discard
+empty boundary leaves; sharing does not hurt the following count.
+
+The resulting finite backwards DAG is connected from its root. Its internal
+OR gates have two outgoing edges (counting multiplicity), and its internal
+AND gates one. With b binary vertices, u unary vertices and k distinct
+boundary vertices, the total number of edges is 2b+u, while reachability of
+all vertices gives at least b+u+k-1 edges. Hence k<=b+1. There are at least
+|S(h_l)| distinct boundary singleton leaves, so |S(h_l)|-1<=b.
+
+All internal gates in this traversal have at least two singleton points and
+are l-compatible. Traversals belonging to different l therefore use disjoint
+internal OR gates. Sum |S(h_l)|-1 over nonempty outputs; outputs of singleton
+support add zero. This proves the lemma.
+
+Constants cause no problem. Constant 0 has empty singleton support and stops.
+Constant 1 is never compatible, so cannot occur in a selected traversal.
+Repeated operands cause no problem: count edges with multiplicity, or remove
+one repeated edge and strengthen the edge count.
+
+Equivalent constructive view: each large-support compatible gate belongs to
+at most one line, so choose its AND child once for that line, replace every
+support-at-most-one wire by its singleton variable or 0, and retain OR gates.
+This constructs disjoint-internal-gates OR DAGs covering S(h_l), with output
+support contained in B_l. Their supports may grow, which is harmless.
+
+2. REVERSE TRANSPOSED CIRCUIT
+
+Write the original inputs as point variables X and line variables Y. Every
+original wire v has a degree-zero-in-Y part a_v(X), obtained by setting all
+Y=0, and a degree-one-in-Y part b_v(X,Y). They satisfy
+  a_OR=a_u OR a_w,
+  b_OR=b_u OR b_w,
+  a_AND=a_u AND a_w,
+  b_AND=(a_u AND b_w) OR (b_u AND a_w).
+At a point input x_p, (a,b)=(x_p,0). At a line input y_l,
+(a,b)=(0,y_l). These are precisely ReadK.linearParts under IsAO2.
+
+The part b_out has the form OR_l (y_l AND g_l(X)). The g_l are computed
+simultaneously by reverse mode:
+  initialize every adjoint d_v=0, except d_out=1;
+  process original gates in reverse order;
+  for OR gate v=(u OR w):
+    d_u := d_u OR d_v;
+    d_w := d_w OR d_v;
+  for AND gate v=(u AND w):
+    d_u := d_u OR (d_v AND a_w);
+    d_w := d_w OR (d_v AND a_u).
+At the end g_l=d_{y_l}.
+
+This is the standard transposition of a linear acyclic network over the
+commutative Boolean semiring of point functions. A direct proof expands all
+paths from y_l to the output: OR edges carry weight 1, an AND edge carries
+the degree-zero value of the opposite operand, and the coefficient is the OR
+over path products. Forward recurrence and reverse accumulation compute the
+same path sum. Repeated operands give repeated contributions, harmless by OR
+idempotence. No product can contain two line leaves since every edge weight
+is a degree-zero function.
+
+The d_v are changing references to wires, NOT overwritten gates. Each update
+allocates an OR gate whose inputs are the old d_v and the new contribution.
+Thus this is a genuine finite acyclic monotone circuit. Compute all a_v first
+with <=s gates, then the d_v in reverse order. Each of the 2s operand positions
+needs at most one new AND and one new OR. Total gates <=5s; OR gates <=3s.
+Constants 0 and 1 are shared and free in the intermediate circuit. Its output
+wires g_l may be aliases.
+
+For exact constant bookkeeping:
+  zero-line forward part: <=#original OR OR gates;
+  reverse accumulations: <=2s OR gates;
+  reverse products: <=2*#original AND AND gates;
+so #OR(intermediate)<=3s, total(intermediate)<=5s.
+
+3. WHY CORRECTNESS IMPLIES THE MULTI-OUTPUT HYPOTHESES
+
+All proof trees counted by b_out are proof trees of C, so
+  b_out(X,Y) <= C(X,Y)
+pointwise. Equivalently, both components of linearParts are below the
+original wire values, proved by gate induction.
+
+Fix l and put Y=1_l, X=1_{P\B_l}, where B_l={p : I(p,l)}.
+The incidence function is false on this assignment. Thus
+  g_l(1_{P\B_l}) = 0.
+This is the global/heavy-input fact that singleton/pair-only arguments lack.
+
+For X=1_p, Y=1_l, the value b_out is by definition
+  lineSingle C (2N) isLine p (N+l),
+and is g_l(1_p). Monotonicity and the displayed compatibility imply that
+g_l(1_p)=1 only for p in B_l. Thus the subtype incidence condition in the task
+does not delete any singleton coefficient points, and its cardinal is exactly
+sum_l |S(g_l)|.
+
+The projective-plane unique-line axiom implies the intersection condition:
+if two distinct p,p' belonged to both B_l and B_m, the uniqueness of their
+common line would imply l=m. The line cardinal and N=q^2+q+1 axioms are not
+needed for this particular combinatorial argument.
+
+4. COUNT ACTIVE OUTPUTS
+
+If a line input y_l is not named by any gate operand, its reverse adjoint is
+zero unless the original circuit output is y_l itself. The latter is ruled
+out by exact incidence correctness: on X=0,Y=1_l the circuit would be true
+while the incidence function is false. Hence every l with S(g_l) nonempty is
+named by at least one of the 2s operand positions. Therefore there are at most
+2s active outputs. No expensive essential-input argument is required.
+
+Original output outside all wires gives an identically-zero degree-one part
+and the bound trivially. Original output a point input also gives a zero
+degree-one part. A proof can split these easy cases before reverse mode, or
+define the seed d_out only when out is a valid wire. The actual assigned
+correctness and plane hypotheses exclude all input/missing-output cases,
+but proving only exclusion of a line output is sufficient for counting.
+
+5. CONCLUSION
+
+Applying section 1 to the simultaneous coefficient circuit:
+  #lineSingle incidence edges
+    = sum_l |S(g_l)|
+    <= #OR(intermediate) + #active line outputs
+    <= 3s+2s = 5s <=33s.
+
+Remaining work is formalization, not a missing combinatorial case. The most
+useful potential reduction is a pair of independent propositions: a generic
+multi-output C4-free coefficient bound, and a size-controlled transposition
+statement expressing the g_l through the existing linearParts definition.
+
+Independent audit requested from sibling proof2462_adversary. Sibling
+proof2462_lean is preparing foundational compatibility/uniqueness lemmas.
+
+6. LEAN PLAN WITHOUT GRAPHS OR UNION-FIND
+
+The request invariant is a direct refinement of Cnt/cnt_step in the already
+checked Outside/L_meta_550.lean. It avoids all connected-component machinery.
+A new working proof is being written in
+  research/interactive_20261124/comb_lean2462/MultiOutput.lean
+with imports Mathlib and PEqualNP.Defs only.
+
+Represent each wire by a pair of finsets (S,T), where S is its true singleton
+point support and T is the set of lines l whose heavy input P\B_l is rejected.
+The default pair for a missing wire is (empty,univ), representing false.
+For point input p the pair is ({p},{l:I p l}). Constants false and true have
+pairs (empty,univ) and (univ,empty), respectively.
+
+The gate algebra is especially simple:
+  OR:  (S_a union S_b, T_a intersection T_b)
+  AND: (S_a intersection S_b, T_a union T_b).
+No separate monotonicity proof is needed: the invariant S x T subset I follows
+directly from these equations and the input case. If |S|>=2, uniqueness of the
+line through a pair of points implies |T|<=1.
+
+For a list L of current wire entries, a request is (l,w), allowed when
+l belongs to T(L[w]). Define
+  footprint(L,W) = union_{(l,w) in W} {l} x S(L[w]).
+The induction invariant is
+  forall allowed finite W, |footprint(L,W)| <= t + |W|,
+where t is the number of processed gates.
+
+When appending entry e at position m=L.length:
+  A. If |e.S|<=1, partition W into old requests (w!=m) and new requests (w=m).
+     New requests contribute at most one labelled point apiece. Apply the
+     induction hypothesis to old requests and sum the bounds.
+  B. If |e.S|>=2, all allowed new requests have one common line label, hence
+     W contains at most one such request r0=(l,m). For OR replace r0 by the
+     at most two operand requests, both allowed; their supports cover e.S.
+     For AND choose a child rejecting the heavy input. Its support contains
+     e.S, so one allowed operand request suffices. The replacement request
+     set has size at most |W|-1+2. Apply the induction hypothesis.
+  C. If there are no new requests, the induction hypothesis applies unchanged.
+
+This proves Count(t+1,L++[e]). At the end take one request (l,o_l) for every
+line with nonempty singleton output support. Its footprint is exactly the
+set of output singletons, and its cardinal is the number of active outputs.
+
+Concrete helper layout already written (not yet compiled while root's checker
+owns the build slot): tagged/card_tagged, footprint, Allowed, Count,
+large_pure_unique, count_snoc, joinEntry/meetEntry, Valid/Good,
+count_join/count_meet, gateEntry/entriesFrom, count_good_from,
+inputEntries/good_inputs/count_inputs/count_entries.
+
+The only remaining infrastructure is proving that entriesFrom really records
+the two finite families of Boolean evaluations of Circuit.wires. This should
+be a gate induction on lists with the snoc getD identities already present.
+Future/missing references are automatically handled by the default pair,
+so no ReadsBack premise is needed for the multi-output theorem. Empty and
+singleton input lists are handled by union/intersection identities directly.
+
+The complete algebraic file MultiOutput.lean (339 lines) was compiled with
+Lean 4.36.0, importing Mathlib and PEqualNP.Defs, and returned EXIT 0 on the
+first attempt. It contains no sorry. The sibling agent is now compiling a
+separate Semantics.lean fragment that links these pairs to Circuit.wires and
+proves the literal multi-output statement used in the proposed cut.
+
+7. FORMALIZING TRANSPOSITION VIA A FRONTIER PAIRING
+
+For H1, do not formalize paths unless convenient. A simpler induction proves
+the forward/reverse identity using a scalar-product invariant over a moving
+wire frontier. Fix a point assignment X and a line assignment Y. Let a_w be
+all zero-line wire values and b_w the one-line wire values, computed forward.
+Let d_w be the current reverse adjoint references, evaluated in the constructed
+point-only circuit D.
+
+With k old wires not yet eliminated, maintain
+  b_output = OR_{w<k} (d_w AND b_w).
+Initially k=2N+s and d_output=1, all others zero, so this is immediate (if the
+output wire is missing, b_output=0 and use all-zero adjoints).
+At the next step w=k-1 is a gate with two operands u,v<w by ReadsBack.
+Its b-value is either b_u OR b_v, or
+  (a_u AND b_v) OR (b_u AND a_v).
+Substitute this in the frontier term d_w AND b_w, distribute AND over OR, and
+merge its contributions into existing d_u and d_v by OR. Then delete w from
+the frontier. All other terms are unchanged. Repeated operands are handled
+by two successive OR updates and Boolean idempotence; importantly, snapshot
+d_w before updating either child. No child can equal w because of ReadsBack.
+
+At the final frontier k=2N, b_point=0 and b_line_l=Y_l, so
+  b_output(X,Y) = OR_l (d_line_l(X) AND Y_l).
+Putting Y equal to a singleton extracts each coefficient exactly. The same
+induction proves the identity for all Y, so no polynomial infrastructure is
+needed. Updates to processed gate adjoints need not be overwritten by zero:
+processed wires are simply omitted from the current frontier sum.
+
+Concrete circuit state for this construction:
+  (D : Circuit, aRef : Fin(2N+s)->Nat, dRef : Fin(2N+s)->Nat).
+Indices are references to already allocated wires of D. Begin D with one
+empty OR gate and one empty AND gate, so their wires are constant0 and1.
+Map every original point input to itself and every original line input to
+the constant0 wire; append one copied/renumbered gate for every original
+gate to compute all aRef. Initialize all dRef to the constant0 reference,
+except the output reference, set to constant1 when valid. Reverse elimination
+appends at most2 AND products and exactly2 OR accumulations per original
+gate. The arrays themselves add no gates.
+
+Thus D has <=5s+2 gates. When s>=1 this is <=8s as required by the chosen H1.
+For s=0, correctness rules out an actual input output; the original output
+is missing, all line coefficients vanish, and one may choose D empty with
+each o_l=N, an absent wire, giving size0 and no active outputs.
+
+The number of active line outputs is bounded separately without an essential
+inputs lemma: if line input y_l is absent from all2s operand positions, d_l
+never receives an update. Its only possible nonzero source would be the
+initial seed, i.e. output=y_l, which exact incidence correctness excludes
+on X=0,Y={l}. So every active line admits an operand occurrence. Choose the
+least such occurrence for an injection into Fin(2s), giving at most2s.
