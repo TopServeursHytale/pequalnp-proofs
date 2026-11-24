@@ -30,10 +30,10 @@
     "reason": "other",
     "http_status": 200
   },
-  "next_attempt_not_before_utc": null,
+  "next_attempt_not_before_utc": "2100-01-01T00:00:00Z",
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": null,
+  "reason": "Paused at the user's explicit request on 2026-11-24. Do not acquire tasks or publish contributions. Clear this deferral only after a new explicit request to resume.",
   "updated_at": "2026-11-24T08:59:43.175750Z",
   "schema": 1
 }
