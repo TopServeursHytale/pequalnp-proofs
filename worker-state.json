@@ -24,11 +24,16 @@
   "submitted_pr_url": null,
   "request_submission": null,
   "submitted_pr_number": null,
-  "release": null,
+  "release": {
+    "attempted": true,
+    "confirmed": true,
+    "reason": "other",
+    "http_status": 200
+  },
   "next_attempt_not_before_utc": null,
   "retry_after_s": null,
   "local_checker_log_sha256": null,
   "reason": "Assigned task is outside the bounded tactic worker's capabilities",
-  "updated_at": "2026-11-24T08:29:55.481888Z",
+  "updated_at": "2026-11-24T08:29:57.096033Z",
   "schema": 1
 }
