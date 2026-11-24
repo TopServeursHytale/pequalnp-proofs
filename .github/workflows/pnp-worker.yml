@@ -1,8 +1,7 @@
 name: Bounded contribution worker
 
 on:
-  schedule:
-    - cron: '17 * * * *'
+  # Paused at the user's request on 2026-11-24; no automatic schedule.
   workflow_dispatch:
   push:
     branches: [main, pnp-worker-setup-20261124]
@@ -24,7 +23,9 @@ concurrency:
 
 jobs:
   contribute:
+    # Resume only after a new explicit user request.
     if: >-
+      false &&
       github.repository == 'TopServeursHytale/pequalnp-proofs' &&
       github.event.repository.private == false &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pnp-worker-setup-20261124')
