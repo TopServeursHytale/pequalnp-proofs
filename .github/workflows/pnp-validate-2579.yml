@@ -1,0 +1,99 @@
+name: Validate reduction L-meta-2579
+
+on:
+  push:
+    branches: [pnp-validate-2579-20261124]
+    paths:
+      - .github/workflows/pnp-validate-2579.yml
+      - validation/2579/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pnp-validation-2579
+  cancel-in-progress: false
+
+jobs:
+  contribute:
+    if: >-
+      github.repository == 'TopServeursHytale/pequalnp-proofs' &&
+      github.event.repository.private == false &&
+      github.ref == 'refs/heads/pnp-validate-2579-20261124'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Check out the worker implementation without stored credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified 2026-11-24
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Prepare an upstream snapshot and separate accounts
+        id: prepare
+        shell: bash
+        run: bash tools/pnp_worker_setup.sh prepare
+
+      - name: Restore the pinned library cache
+        id: environment-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4, verified 2026-11-24
+        with:
+          path: /opt/pnp-work/upstream/lean/.lake/packages
+          key: pnp-library-v2-${{ runner.os }}-${{ steps.prepare.outputs.pin_key }}
+
+      - name: Build the pinned environment before reserving any task
+        id: build
+        timeout-minutes: 25
+        shell: bash
+        run: bash /opt/pnp-controller/setup.sh build
+
+      # Save before any candidate is compiled. No outside build output, lease,
+      # controller file, log, or credential is included in these cache paths.
+      - name: Save a bounded library cache
+        if: steps.environment-cache.outputs.cache-hit != 'true' && steps.build.outputs.cache_ok == 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4, verified 2026-11-24
+        with:
+          path: /opt/pnp-work/upstream/lean/.lake/packages
+          key: pnp-library-v2-${{ runner.os }}-${{ steps.prepare.outputs.pin_key }}
+
+      - name: Prepare bounded swap space for the verifier
+        timeout-minutes: 5
+        shell: bash
+        run: bash /opt/pnp-controller/setup.sh swap
+
+      - name: Lock the compiler's access and verify isolation
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          bash /opt/pnp-controller/setup.sh lock
+          python3 /opt/pnp-controller/test_pnp_worker.py
+          python3 /opt/pnp-controller/test_pnp_worker.py \
+            --isolation /opt/pnp-controller/locked-lake.sh \
+            --compiler-user pnp_build \
+            --upstream-dir /opt/pnp-work/upstream
+
+      - name: Validate the exact reduction with the project checker
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          sudo -n install -m 0755 -o root -g root validation/2579/check-reduction.sh /opt/pnp-controller/check-reduction.sh
+          sudo -n install -m 0755 -o root -g root validation/2579/validate.py /opt/pnp-controller/validate.py
+          python3 /opt/pnp-controller/validate.py --source-dir "$GITHUB_WORKSPACE/validation/2579" \
+            --upstream-dir /opt/pnp-work/upstream --elan-home /opt/pnp-work/elan --compiler-user pnp_build
+
+      - name: Stop this run's remaining checker and compiler processes
+        if: always()
+        shell: bash
+        run: |
+          if id pnp_build >/dev/null 2>&1; then
+            sudo -n pkill -KILL -u pnp_build || true
+          fi
+          if [[ ${GITHUB_RUN_ID:-} =~ ^[0-9]+$ ]]; then
+            while IFS= read -r unit; do
+              [[ $unit =~ ^pnp-worker-check-${GITHUB_RUN_ID}-[0-9]+-[0-9]+[.]scope$ ]] || continue
+              sudo -n systemctl kill --kill-whom=all --signal=KILL "$unit" || true
+            done < <(systemctl list-units --all --type=scope --no-pager --no-legend --plain \
+              "pnp-worker-check-${GITHUB_RUN_ID}-*.scope" | awk '{print $1}')
+          fi

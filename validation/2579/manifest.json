@@ -1,0 +1,16 @@
+{
+  "gap_id": "L-meta-2579",
+  "kind": "reduce",
+  "module": "PEqualNP.Outside.R_meta_2579_724",
+  "proof_sha256": "ff3fc8e703b88337d2ced82c35d367a6299029bb8003a045ab51d3c98218ac47",
+  "statement_sha256": "d0c8a189ac4ee17a8155a0aaf935f2ab0f3875e45052134e7415e5813a1f0548",
+  "imports": [
+    "PEqualNP.Defs"
+  ],
+  "children": 2,
+  "local_compile": "exit0",
+  "child_characters": [
+    1173,
+    1343
+  ]
+}
