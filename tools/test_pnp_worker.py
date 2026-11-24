@@ -254,6 +254,25 @@ class PullRequestTests(unittest.TestCase):
                 self.assertFalse(self.verified(pr, changed_files))
 
 
+class CheckerAcceptanceTests(unittest.TestCase):
+    def test_a_killed_checker_or_mismatched_manifest_never_counts_as_acceptance(self):
+        w = worker_module()
+        source = b"theorem OfflineFixture : True := by trivial\n"
+        module = "PEqualNP.Outside.WorkerSmoke"
+        manifest = {"rests_on": [{"module": module, "sha256": w.digest(source)}]}
+        accepted = "MANIFEST " + json.dumps(manifest) + "\nACCEPTED (check)\n"
+        self.assertEqual(w.require_checker_acceptance(0, accepted, module, source), manifest)
+        for code, output, expected_source in [
+            (137, accepted, source), (124, accepted, source),
+            (0, "REJECTED synthetic fixture\n" + accepted, source),
+            (0, accepted, source + b"-- changed\n"),
+            (0, "ACCEPTED (check)\n", source),
+        ]:
+            with self.subTest(code=code, output=output):
+                with self.assertRaises(w.WorkerError):
+                    w.require_checker_acceptance(code, output, module, expected_source)
+
+
 class WorkerBehaviorTests(unittest.TestCase):
     NOW = SubmissionRequestTests.NOW
 
@@ -462,6 +481,33 @@ class WorkerBehaviorTests(unittest.TestCase):
             with self.assertRaises(self.w.WorkerError):
                 worker.compiler_command(command)
 
+    def test_checker_interruption_cleans_its_scope_before_forgetting_it(self):
+        worker = self.worker
+        imports = worker.private / "outside-imports.txt"
+        imports.write_text("")
+        worker.run_command = mock.Mock(side_effect=self.w.LeaseLost("Offline 410 fixture"))
+        cleaned = []
+        worker.stop_processes.side_effect = lambda: cleaned.append(worker.check_unit)
+        with self.assertRaises(self.w.LeaseLost):
+            worker.run_checker(self.root / "proof.lean", self.root / "statement.txt", imports)
+        call = worker.run_command.call_args
+        self.assertEqual(call.args[1], 1245)
+        self.assertEqual(cleaned, [call.args[0][-1]])
+        self.assertRegex(cleaned[0], r"^pnp-worker-check-123-[0-9]+-[0-9]+$")
+        self.assertIsNone(worker.check_unit)
+
+    def test_scope_cleanup_targets_only_current_scope_and_compiler_identity(self):
+        worker = self.worker
+        worker.check_unit = "pnp-worker-check-123-456-1"
+        worker.current_process = None
+        with mock.patch.object(self.w.subprocess, "run") as run:
+            self.w.Worker.stop_processes(worker)
+        self.assertEqual([call.args[0] for call in run.call_args_list], [
+            ["sudo", "-n", "systemctl", "kill", "--kill-whom=all", "--signal=KILL",
+             "pnp-worker-check-123-456-1.scope"],
+            ["sudo", "-n", "pkill", "-KILL", "-u", "pnp_build"],
+        ])
+
 
 def run_isolation_check(wrapper, compiler_user, upstream_dir=None):
     """Exercise the real wrapper using a fake executable and harmless markers."""
@@ -496,6 +542,8 @@ def run_isolation_check(wrapper, compiler_user, upstream_dir=None):
         gitconfig.write_text("[safe]\n\tdirectory = *\n", encoding="utf-8")
         gitconfig.chmod(0o644)
         protected = [str(wrapper), str(wrapper.parent)]
+        protected += [str(wrapper.parent / name) for name in
+                      ("pnp_worker.py", "pnp_worker_check.sh", "pnp_worker_smoke.py")]
         expected_writable = []
         if upstream_dir is not None:
             upstream = Path(upstream_dir).resolve(strict=True)

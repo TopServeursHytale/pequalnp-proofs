@@ -101,6 +101,27 @@ def checked_json(data, label):
         raise WorkerError(f"{label} did not return valid JSON") from None
 
 
+def checker_timeout(outside_imports):
+    """The authoritative job allows 20 min plus 4 per outside import, at most 45."""
+    count = sum(bool(line.strip()) for line in Path(outside_imports).read_text().splitlines())
+    return min(1200 + 240 * count, 2700)
+
+
+def require_checker_acceptance(code, output, module, source):
+    lines = output.strip().splitlines()
+    manifests = [line[9:] for line in lines if line.startswith("MANIFEST ")]
+    if (code or not lines or not lines[-1].startswith("ACCEPTED (check)") or len(manifests) != 1
+            or any(line.startswith("REJECTED") for line in lines)):
+        raise WorkerError("The exact project checker did not accept the candidate locally")
+    manifest = checked_json(manifests[0].encode(), "Checker manifest")
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("rests_on"), list):
+        raise WorkerError("Checker manifest has an invalid shape")
+    if not any(m.get("module") == module and m.get("sha256") == digest(source)
+               for m in manifest["rests_on"] if isinstance(m, dict)):
+        raise WorkerError("Checker manifest did not match the proof source")
+    return manifest
+
+
 def validate_assignment(data):
     """Return the exact gap and lease id; never include input in an exception."""
     if not isinstance(data, dict) or not isinstance(data.get("gap"), dict):
@@ -329,6 +350,7 @@ class Worker:
         self.release_reason = "other"
         self.stopping = False
         self.current_process = None
+        self.check_unit = None
         self.process_count = 0
         self.granted_nonces = set()
         self.invalid_pr_numbers = set()
@@ -339,6 +361,7 @@ class Worker:
         self.upstream_sha = None
         self.tc_bin = Path(os.environ.get("PNP_TC_BIN", str(self.elan_home / "bin")))
         self.wrapper = Path(os.environ.get("PEQUALNP_REAL_LAKE", "/opt/pnp-controller/locked-lake.sh"))
+        self.check_wrapper = Path("/opt/pnp-controller/pnp_worker_check.sh")
         self.run_deadline = parse_time(os.environ.get("PNP_RUN_DEADLINE_UTC"))
 
     def update(self, **patch):
@@ -389,6 +412,11 @@ class Worker:
                                capture_output=True, timeout=10)
             except ProcessLookupError:
                 pass
+        if self.check_unit:
+            # systemd may have moved descendants outside the original process group.
+            with contextlib.suppress(Exception):
+                subprocess.run(["sudo", "-n", "systemctl", "kill", "--kill-whom=all", "--signal=KILL",
+                                self.check_unit + ".scope"], capture_output=True, timeout=10)
         with contextlib.suppress(Exception):
             subprocess.run(["sudo", "-n", "pkill", "-KILL", "-u", self.args.compiler_user],
                            capture_output=True, timeout=10)
@@ -428,6 +456,18 @@ class Worker:
                 self.current_process = None
         output = log.read_bytes()[:MAX_LOG_BYTES].decode("utf-8", errors="replace")
         return (124 if timed_out else process.returncode), output
+
+    def run_checker(self, proof_path, statement_path, outside_imports):
+        limit = checker_timeout(outside_imports)
+        self.check_unit = f"pnp-worker-check-{self.run_id}-{os.getpid()}-{self.process_count + 1}"
+        try:
+            return self.run_command(
+                [str(self.check_wrapper), str(self.upstream), str(proof_path), str(statement_path),
+                 str(outside_imports), self.check_unit], limit + 45, cwd=self.upstream,
+            )
+        finally:
+            self.stop_processes()
+            self.check_unit = None
 
     def fetch_registry(self):
         status, body = self.desk.request(REGISTRY)
@@ -570,18 +610,8 @@ class Worker:
                 raise WorkerError("Proof source changed during compilation")
             if code:
                 continue
-            code, output = self.run_command(
-                ["node", str(self.upstream / "tools/check-lean.mjs"), str(proof_path), str(self.private / "statement.txt"), "check"],
-                2700, cwd=self.upstream,
-            )
-            lines = output.strip().splitlines()
-            manifests = [line[9:] for line in lines if line.startswith("MANIFEST ")]
-            if code or not lines or not lines[-1].startswith("ACCEPTED (check)") or len(manifests) != 1:
-                raise WorkerError("The exact project checker did not accept the candidate locally")
-            manifest = checked_json(manifests[0].encode(), "Checker manifest")
-            if not any(m.get("module") == self.gap["module"] and m.get("sha256") == digest(source)
-                       for m in manifest.get("rests_on", []) if isinstance(m, dict)):
-                raise WorkerError("Checker manifest did not match the proof source")
+            code, output = self.run_checker(proof_path, self.private / "statement.txt", self.private / "outside-imports.txt")
+            require_checker_acceptance(code, output, self.gap["module"], source)
             if proof_path.read_bytes() != source:
                 raise WorkerError("Proof source changed after checking")
             self.proof = source

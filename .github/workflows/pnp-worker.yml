@@ -11,6 +11,8 @@ on:
       - tools/pnp_worker.py
       - tools/pnp_worker_setup.sh
       - tools/pnp_worker_locked_lake.sh
+      - tools/pnp_worker_check.sh
+      - tools/pnp_worker_smoke.py
       - tools/test_pnp_worker.py
 
 permissions:
@@ -63,6 +65,11 @@ jobs:
           path: /opt/pnp-work/upstream/lean/.lake/packages
           key: pnp-library-v2-${{ runner.os }}-${{ steps.prepare.outputs.pin_key }}
 
+      - name: Prepare bounded swap space for the verifier
+        timeout-minutes: 5
+        shell: bash
+        run: bash /opt/pnp-controller/setup.sh swap
+
       - name: Lock the compiler's access and verify isolation
         timeout-minutes: 3
         shell: bash
@@ -73,6 +80,16 @@ jobs:
             --isolation /opt/pnp-controller/locked-lake.sh \
             --compiler-user pnp_build \
             --upstream-dir /opt/pnp-work/upstream
+
+      - name: Verify a harmless proof through the real checker
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          python3 /opt/pnp-controller/pnp_worker_smoke.py \
+            --upstream-dir /opt/pnp-work/upstream \
+            --elan-home /opt/pnp-work/elan \
+            --compiler-user pnp_build
 
       - name: Attempt one ordinary task and await its submission
         # This is the only shell step that receives the write token. The worker
@@ -93,10 +110,17 @@ jobs:
             --compiler-user pnp_build \
             --max-wait-minutes 90
 
-      - name: Stop any remaining compiler processes
+      - name: Stop this run's remaining checker and compiler processes
         if: always()
         shell: bash
         run: |
           if id pnp_build >/dev/null 2>&1; then
             sudo -n pkill -KILL -u pnp_build || true
+          fi
+          if [[ ${GITHUB_RUN_ID:-} =~ ^[0-9]+$ ]]; then
+            while IFS= read -r unit; do
+              [[ $unit =~ ^pnp-worker-check-${GITHUB_RUN_ID}-[0-9]+-[0-9]+[.]scope$ ]] || continue
+              sudo -n systemctl kill --kill-whom=all --signal=KILL "$unit" || true
+            done < <(systemctl list-units --all --type=scope --no-pager --no-legend --plain \
+              "pnp-worker-check-${GITHUB_RUN_ID}-*.scope" | awk '{print $1}')
           fi

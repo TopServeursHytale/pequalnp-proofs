@@ -36,7 +36,7 @@ case "${1:-}" in
     sudo -n chmod 0700 /home/pnp_build
     # The compiler cannot read the coordinator's private lease or log directory.
     install -d -m 0700 "$private_dir" "$private_dir/builds"
-    for item in pnp_worker.py test_pnp_worker.py; do
+    for item in pnp_worker.py test_pnp_worker.py pnp_worker_smoke.py pnp_worker_check.sh; do
       [[ -f "tools/$item" ]] || fail "missing controller source tools/$item"
       sudo -n install -m 0755 -o root -g root "tools/$item" "$controller_root/$item"
     done
@@ -145,6 +145,67 @@ PY
     printf 'Prepared Lean/Mathlib and verifier; cache payload %s bytes.\n' "$cache_bytes"
     ;;
 
+  swap)
+    [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && $HOME == /home/runner ]] || fail 'swap preparation requires the disposable GitHub-hosted runner'
+    [[ -x $upstream_dir/lean/.lake/build/bin/checklemma ]] || fail 'prepared verifier missing'
+    readonly reserve_bytes=6442450944
+    readonly max_swap_bytes=12884901888
+    select_swap_location() {
+      swap_parent=''
+      swap_available=0
+      for candidate in / /mnt; do
+        [[ -d $candidate && ! -L $candidate ]] || continue
+        [[ $(readlink -f -- "$candidate") == "$candidate" ]] || continue
+        [[ $(stat -c %u -- "$candidate") == 0 ]] || continue
+        mode=$(stat -c %a -- "$candidate")
+        [[ $mode =~ ^[0-7]{3,4}$ ]] || fail 'invalid swap parent permissions'
+        (( (8#$mode & 0022) == 0 )) || continue
+        free=$(df -B1 --output=avail "$candidate" | awk 'NR==2 { print $1 }')
+        [[ $free =~ ^[0-9]+$ ]] || fail 'could not measure swap filesystem space'
+        if (( free > swap_available )); then
+          swap_parent=$candidate
+          swap_available=$free
+        fi
+      done
+      [[ -n $swap_parent ]] || fail 'no protected swap location is available'
+    }
+    select_swap_location
+    # Reclaim only these unused toolsets from the upstream workflow, and only
+    # while the selected filesystem cannot hold 12 GiB plus the 6 GiB reserve.
+    for toolset in /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL; do
+      (( swap_available < reserve_bytes + max_swap_bytes )) || break
+      case "$toolset" in
+        /usr/local/lib/android|/opt/ghc|/usr/local/.ghcup|/usr/share/swift|/opt/hostedtoolcache/CodeQL) ;;
+        *) fail 'refusing an unexpected toolset cleanup path' ;;
+      esac
+      [[ -e $toolset || -L $toolset ]] || continue
+      [[ -d $toolset && ! -L $toolset && $(readlink -f -- "$toolset") == "$toolset" ]] || fail 'toolset cleanup path is not a fixed real directory'
+      ! mountpoint -q -- "$toolset" || fail 'refusing to remove a mounted toolset'
+      printf 'Reclaiming unused runner toolset: %s\n' "$toolset"
+      sudo -n rm -rf --one-file-system -- "$toolset"
+      select_swap_location
+    done
+    # Round down to full MiB, preserving at least 6 GiB for the actual work.
+    swap_bytes=$(( (swap_available - reserve_bytes) / 1048576 * 1048576 ))
+    (( swap_bytes <= max_swap_bytes )) || swap_bytes=$max_swap_bytes
+    (( swap_bytes >= 1073741824 )) || fail 'not enough space for 1 GiB swap with 6 GiB disk kept free'
+    swap_file="${swap_parent%/}/pnp-worker-swap"
+    case "$swap_file" in
+      /pnp-worker-swap|/mnt/pnp-worker-swap) ;;
+      *) fail 'refusing an unexpected swap path' ;;
+    esac
+    [[ ! -e $swap_file && ! -L $swap_file ]] || fail 'refusing to replace an existing swap path'
+    sudo -n install -m 0600 -o root -g root /dev/null "$swap_file"
+    sudo -n fallocate -l "$swap_bytes" "$swap_file"
+    [[ $(stat -c '%u:%g:%a' -- "$swap_file") == 0:0:600 ]] || fail 'swap ownership or permissions are incorrect'
+    sudo -n mkswap -q "$swap_file"
+    sudo -n swapon -- "$swap_file"
+    remaining=$(df -B1 --output=avail "$swap_parent" | awk 'NR==2 { print $1 }')
+    (( remaining >= reserve_bytes )) || fail 'less than 6 GiB disk remains after allocating swap'
+    printf 'Verifier swap: %s MiB at %s; %s bytes remain free.\n' "$((swap_bytes / 1048576))" "$swap_file" "$remaining"
+    free -m
+    ;;
+
   lock)
     : "${PNP_TC_BIN:?build must run first}"
     [[ -x $upstream_dir/lean/.lake/build/bin/checklemma ]] || fail 'prepared verifier missing'
@@ -167,6 +228,6 @@ PY
     ;;
 
   *)
-    fail 'usage: pnp_worker_setup.sh prepare|build|lock'
+    fail 'usage: pnp_worker_setup.sh prepare|build|swap|lock'
     ;;
 esac

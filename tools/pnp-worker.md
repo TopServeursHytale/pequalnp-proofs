@@ -15,10 +15,12 @@ deadline 110 minutes after preparation starts, leaving time for cleanup before
 GitHub's job timeout.
 
 Before requesting a task, the job fetches an exact upstream commit, installs
-the pinned Lean toolchain, restores or downloads the pinned Mathlib, and builds the verifier,
-Mathlib, and the definitions root. Outside proof sources are moved out of the
-tree during that trusted build. Setup or isolation failures occur before any
-reservation.
+the pinned Lean toolchain, restores or downloads the pinned Mathlib, and builds
+the verifier, Mathlib, and the definitions root. Outside proof sources are moved
+out of the tree during that trusted build. Setup or isolation failures occur
+before any reservation. Push and manual runs also require a harmless proof to
+pass the real checker, under the same memory limit as a contribution. This smoke
+test uses no desk task or lease; scheduled runs omit the repeated smoke test.
 
 The worker then asks for one ordinary task. It respects an empty desk response,
 tries a small set of tactics for an assigned task, and uses the project's guards
@@ -46,7 +48,20 @@ controller, or library. Its writable build locations are restricted to the
 outside-module outputs; temporary trials and its own home are also writable.
 The controller and lake wrapper are installed root-owned outside the checkout.
 The runner's home and private lease/log directories are inaccessible to the
-compiler. Offline protocol tests and real isolation tests run before the token-bearing step.
+compiler. Offline protocol tests and real isolation tests run before the
+token-bearing step.
+
+The verifier can need more memory than the standard runner provides. Before
+locking the compiler or reserving a task, the job prepares a root-owned swap
+file with mode 0600, at most 12 GiB, while preserving at least 6 GiB of disk on
+that filesystem. If space is insufficient, it removes only unused preinstalled
+Android, GHC, ghcup, Swift, or CodeQL toolsets from the disposable runner, stopping
+as soon as sufficient space is available. It never replaces an existing swap
+path. The checker runs in a separate memory-limited scope, leaving approximately
+3 GiB of RAM for the coordinator and runner on the standard 16 GiB machine.
+Timeouts, resource failures, and missing acceptance output block publication.
+The final cleanup kills any remaining compiler processes and only the checker
+scopes whose names belong to the current workflow run.
 
 ## Storage and shutdown
 
@@ -56,7 +71,8 @@ secrets. The cache contains only the pinned dependency tree, is saved before
 untrusted compilation, and has an 8 GiB payload ceiling. Elan and the Lean
 toolchain are installed fresh on each runner, keeping the larger combined
 installation out of the cache. The cache contains no proof output, state, lease,
-or log. No workflow artifact is uploaded.
+or log. No workflow artifact is uploaded. Swap exists only for the lifetime of
+the disposable runner and is not cached.
 
 To pause future attempts, disable the `Bounded contribution worker` workflow in
 GitHub Actions. Cancelling a live run may interrupt its cleanup; a lease whose
