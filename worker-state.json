@@ -1,39 +1,25 @@
 {
-  "phase": "finished",
-  "run_id": "45359423298",
-  "run_url": "https://github.com/TopServeursHytale/pequalnp-proofs/actions/runs/45359423298",
-  "upstream_sha": "ae813061f972e857a9729911bcfe3877a9acc487",
-  "gap": {
-    "id": "L-meta-2531",
-    "title": "A step toward: A step toward: Petersen graph minus a vertex: no AND, OR (fan-in two), NOT circuit with at most 15 gates and first gate AND(x_0, x_6) computes its edge function",
-    "file": "lean/PEqualNP/Outside/L_meta_2531.lean",
-    "module": "PEqualNP.Outside.L_meta_2531",
-    "statement": "have x1 : (Fin (9 : ℕ) → Bool) → Bool := fun (x1 : Fin (9 : ℕ) → Bool) => [(1 : ℕ), (12 : ℕ), (23 : ℕ), (34 : ℕ), (40 : ℕ), (5 : ℕ), (16 : ℕ), (27 : ℕ), (38 : ℕ), (57 : ℕ), (68 : ℕ), (85 : ℕ)].any fun (x2 : ℕ) => x1 (Fin.ofNat (9 : ℕ) (x2 / (10 : ℕ))) && x1 (Fin.ofNat (9 : ℕ) (x2 % (10 : ℕ))); ∀ (x2 : List PEqualNP.CircuitLowerBounds.Gate) (x3 : PEqualNP.CircuitLowerBounds.Gate) (x4 : ℕ),   x2.length ≤ (11 : ℕ) →     x4 ≤ (21 : ℕ) →       PEqualNP.MetaComplexity.FanInTwo { gates := x2 ++ [x3], output := (0 : ℕ) : PEqualNP.CircuitLowerBounds.Circuit } →         (∀ x8 ∈ x2 ++ [x3], ∀ x10 ∈ x8.inputs, x10 ≤ (21 : ℕ)) →           have x9 : (Fin (9 : ℕ) → Bool) → List Bool := fun (x9 : Fin (9 : ℕ) → Bool) => { gates := x2, output := (0 : ℕ) : PEqualNP.CircuitLowerBounds.Circuit }.wires (List.ofFn x9 ++ [x9 (0 : Fin (9 : ℕ)) && x9 (6 : Fin (9 : ℕ))]);           have x10 : (Fin (9 : ℕ) → Bool) → Bool := fun (x10 : Fin (9 : ℕ) → Bool) => x3.op.eval (List.map (fun (x11 : ℕ) => (x9 x10).getD x11 Bool.false) x3.inputs);           (∀ (x11 : Fin (9 : ℕ) → Bool), x1 x11 = Bool.false → x10 x11 = Bool.false ∧ (x9 x11).getD x4 Bool.false = Bool.true) → ∃ (x12 : Fin (9 : ℕ) → Bool), x1 x12 = Bool.true ∧ x10 x12 = Bool.false ∧ (x9 x12).getD x4 Bool.false = Bool.true",
-    "imports": [
-      "PEqualNP.Defs"
-    ]
-  },
+  "phase": "waiting",
+  "run_id": "45360259292",
+  "run_url": "https://github.com/TopServeursHytale/pequalnp-proofs/actions/runs/45360259292",
+  "upstream_sha": "5bd7a514488be182ebbef5045c4497691668f475",
+  "gap": null,
   "proof_branch": null,
   "proof_commit_sha": null,
   "proof_sha256": null,
-  "statement_sha256": "e9c5314ec73efbee7a9db663eee172747bb3c577c40926283c5ce32cdfcc2aa0",
+  "statement_sha256": null,
   "local_checker": null,
-  "last_lease_beat_utc": "2026-11-24T08:52:53.865472Z",
+  "last_lease_beat_utc": null,
   "submission_window_expires_at": null,
   "submission_permit": null,
   "submitted_pr_url": null,
   "request_submission": null,
   "submitted_pr_number": null,
-  "release": {
-    "attempted": true,
-    "confirmed": true,
-    "reason": "other",
-    "http_status": 200
-  },
+  "release": null,
   "next_attempt_not_before_utc": null,
   "retry_after_s": null,
   "local_checker_log_sha256": null,
-  "reason": "Assigned task is outside the bounded tactic worker's capabilities",
-  "updated_at": "2026-11-24T08:52:57.129959Z",
+  "reason": "Environment prepared; requesting at most one ordinary task",
+  "updated_at": "2026-11-24T08:59:32.408240Z",
   "schema": 1
 }
