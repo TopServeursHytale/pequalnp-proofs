@@ -1,0 +1,175 @@
+L-meta-2579 -- combinatorial notes
+2026-11-24, agent proof2462_combinatorics (same child, new assigned task)
+No desk access and no publication from this child. Stop immediately on HTTP410.
+
+TASK
+R is the set Ustar(G,C) after deleting every edge {u,v} with a branching OR
+witness h whose orIn is large (at least two points), contained in N(u), and
+one operand has orIn exactly {v}. We must show |R|<=c*(C.size+1), uniformly
+over graphs of girth at least5 and least top-form AO2 circuits.
+
+RELEVANT EXISTING PROOFS / CUTS
+R_meta_1735_7 is the direct parent: its first child counts the removed witness
+edges by2*C.size using NoFourCycle. Its second child is exactly our task.
+R_meta_1735_1 already splits by zero/one junk and global nesting/no-nesting.
+That global case split should not be proposed again as a new contribution.
+R_meta_1735_5 peels vertices of residual degree<=2 until a 3-core remains.
+The adversary agent also observed live public PRs #4876 (singleton-support
+descent) and #4982 (bipartition plus 3-core peeling). We should avoid them.
+
+L_meta_1766 is a checked structural cover of Ustar by two overlapping types:
+ A. LEAF--JUNK: a top AND has one operand OR-reaching a leaf u and its other
+    operand OR-reaching a junk AND j true at the edge input {u,v}.
+ B. JUNK--JUNK: a top AND has two DISTINCT junk ANDs, one OR-reached from
+    each operand, both true at the same edge input.
+The distinctness in B is substantive: if the same junk gate reached both
+sides of a top, that junk gate would itself be below the graph function.
+The Lean agent is preparing a two-child cut bounding the intersections of R
+with these two certificate families. This uses an already-proved cover and
+does not split by a predicate versus its negation.
+
+In case A, the leaf u belongs to Wmax(G,C,j):
+  for every input x, x_u AND gate_j(x) implies f_G(x).
+This follows immediately because u reaches one top operand through ORs and
+j reaches the other top operand through ORs, while the top AND is below f_G.
+The same implication is used in existing L_meta_1878 (the one-junk proof),
+under its local lemma top_w, around line838.
+
+NEW USEFUL LOCAL CONSEQUENCE: A SIDE IS PURE UP TO ONE EXCEPTION
+
+Let j be any binary AND gate and u in Wmax(G,C,j). Put
+  A = orIn(input0(j)), B = orIn(input1(j)).
+For every a in A and b in B, the input with {u,a,b} switched on activates
+j and x_u. Hence f_G is true on this three-point set, so
+  Adj(u,a) OR Adj(u,b) OR Adj(a,b).
+This uses a three-point/heavy input, not only edge inputs.
+
+Remove the neighbors of u from the two sides:
+  A0 = {a in A : not Adj(u,a)},
+  B0 = {b in B : not Adj(u,b)}.
+Then A0 x B0 is a complete bipartite subgraph of G. Since G has no4-cycle,
+  |A0|<=1 OR |B0|<=1.
+Indeed, if A0 has distinct a,a', every b in B0 is a common neighbor of a,a',
+and NoFourCycle bounds the number of such b by1.
+
+Thus every junk AND in a leaf context has a linear-input side which is
+contained in N(u) except for at most one vertex. This is stronger than the
+bare singleton-support condition. It suggests a descent which charges the
+exception or the first OR where the side becomes large; fully pure branching
+with a singleton operand is exactly the certificate already removed from R.
+
+The remaining obstacle is GLOBAL sharing: the exceptional side and its leaf
+context u can vary between different top consumers of the same junk gate.
+One cannot sum a per-gate or per-context bound without controlling this reuse.
+Case B is a different obstruction: products of two junk functions can be below
+f_G even though neither function has an exposed leaf context. Nested/shared
+junk gates need to be addressed there. These are mathematically different
+children of the proposed structural cut.
+
+WHY THE PREVIOUS TASK'S H2 DOES NOT IMMEDIATELY CLOSE THIS TASK
+For plane incidence, a line coefficient g_l was globally below OR N(l), so it
+vanished on ALL non-neighbors. Here u in Wmax(j) gives only
+  x_u AND g_j <= f_G.
+The graph function can already be true on edges entirely among non-neighbors
+of u. Therefore it does not force g_j to vanish on the full non-neighbor
+assignment, and the earlier H2 counting invariant cannot simply be applied.
+The three-point rectangle observation above is a valid replacement, but it
+still leaves the sharing/exception accounting as a real open obligation.
+
+SECOND LOCAL DICHOTOMY: MANY LEAF CONTEXTS FORCE A COMMON BAD VERTEX
+
+Suppose a gate j accepts a non-edge pair {a,b}. For every u in Wmax(j),
+activation on {u,a,b} forces u adjacent to a or b. Thus
+  Wmax(j) subset N(a) union N(b).
+If j also accepts a disjoint non-edge pair {c,d}, then
+  Wmax(j) subset (N(a) union N(b)) intersection (N(c) union N(d)).
+The right-hand set is the union of four common-neighbor sets. Each has at
+most one vertex by NoFourCycle, since the two pairs are disjoint. Therefore
+  |Wmax(j)| <= 4.
+
+Consequently, a gate with at least5 leaf contexts in Wmax cannot have two
+vertex-disjoint bad pair witnesses. Its bad pair witnesses form a pairwise
+intersecting family of two-element sets. Such a family is either a star or
+contained in a triangle. A triangle of bad pairs {a,b},{b,c},{a,c} forces
+Wmax into the union of three common-neighbor sets and hence |Wmax|<=3.
+So, when |Wmax|>=5, all bad two-element witnesses share a common vertex.
+
+Singleton bad witnesses fit the same conclusion: if j accepts singleton a,
+then Wmax(j) subset N(a). Any bad pair disjoint from a would bound Wmax by2.
+Therefore all bad witnesses of size<=2 share a common vertex when |Wmax|>=5.
+
+For a bottommost junk gate in the InCone order, TopForm excludes any below-F
+AND descendant, while bottommost-junk excludes all other AND descendants.
+Its operands are therefore ORs of input variables and all its prime implicants
+have size<=2. In that restricted situation the common-bad-vertex property
+upgrades to the global implication gate_j <= f_G OR x_r. It may provide a
+useful local simplification for a future induction on nested/shared junk.
+The actual cost-preserving surgery has NOT been proved here, and no global
+linear bound follows merely by summing these local statements.
+
+THIRD LOCAL LEMMA: COUNTING ALMOST-PURE BRANCHES
+
+Fix an OR gate h and an operand position whose orIn is the singleton {v}.
+Let S=orIn(h), and assume |S|>=3. Consider centers u for which uv is an edge
+and S has at most one point outside N(u). When v belongs to S (as it does for
+a valid earlier operand in AO2), choose distinct a,b in S\{v}. The center u
+must be adjacent to at least one of a,b, because it has at most one exception.
+Since it is also adjacent to v, it belongs to
+  (N(v) intersection N(a)) union (N(v) intersection N(b)).
+Each intersection has cardinal at most1 by NoFourCycle. Thus there are at most
+two centers for a fixed gate and operand position. Consequently all edges
+with such an almost-pure branching witness can be bounded by4*C.size.
+
+The analogous statement with at most k exceptions and |S|>=k+2 has at most
+k+1 centers per port: choose k+1 points of S\{v}; some one must be adjacent
+to u, and each point supplies at most one common neighbor with v. The pure
+branching count in the parent reduction is precisely the k=0 case.
+
+Without requiring the adjacency uv or the fact v belongs to S, an almost-pure
+set S of size at least3 admits at most3 centers, by choosing a triple in S
+and covering all centers by its three pairwise common-neighbor sets. This
+weaker formulation gives6*C.size and does not need the operand-validity step.
+
+AlmostPureSide.lean now includes the checked initial near-purity lemma and
+two finite center-counting lemmas implementing the selection argument. The
+second compilation checked all three lemmas and returned EXIT0 with no output,
+warnings or sorry. The official candidate reduction R_meta_2579_724 remains
+unchanged by this auxiliary work.
+
+REDUCTION MODULE HYGIENE (Lean 4.36.0 source audit)
+
+The ordinary Lean compilation succeeded, but the full checker rejected
+reduce-extra: simp/rw/unfold had lazily generated equation and congruence
+theorems for imported Defs declarations in the candidate's own module.
+The checker inspects full.header.moduleData[idx].constants; it does not inspect
+ModuleData.extraConstNames for this condition (CheckLemma.lean lines309-316).
+
+Safe replacements, verified by reading this toolchain's Lean sources:
+* `delta Def` uses Meta.deltaExpand, instantiateValueLevelParams and a direct
+  expression transformation. No equation theorem realization is invoked.
+* `dsimp only [Def]` adds .toUnfold directly in
+  Lean/Elab/Tactic/Simp.lean elabDeclToUnfoldOrTheorem (line281), whereas
+  simp[Def] invokes mkSimpEntryOfDeclToUnfold and then getEqnsFor?.
+* `simp (config := { congrConsts := false })` constructs congruence proofs
+  locally via mkCongrSimpCore?, instead of realizing f.congr_simp via
+  mkCongrSimpForConst? (Lean/Meta/Tactic/Simp/Types.lean lines790-793).
+  Init/MetaTypes.lean explicitly documents this exact option and purpose.
+* `unfold Def` is not safe: Meta/Tactic/Unfold.lean invokes getUnfoldEqnFor?.
+  `rw [Def]` also explicitly invokes getEqnsFor? in Elab/Tactic/Rewrite.lean.
+* Local let definitions can still be unfolded using dsimp or the local branch
+  of unfold. The issue is realization of global imported declarations.
+
+Read-only diagnostic InspectModule.lean imports only Lean, calls
+Lean.readModuleData on an ordinary .olean and prints ModuleData.constants.
+It does not import Mathlib, Defs, the candidate or the checker. It compiled
+and ran successfully on its own .olean, exit0. Usage from the project /lean:
+  lake env lean --run /workspace/scratch/da71fe3797d5/research/interactive_20261124_02/InspectModule.lean FILE.olean
+The usual session ELAN_HOME and PATH environment variables are required.
+To produce an .olean from a source outside the current project root, pass
+  -R /workspace/scratch/da71fe3797d5 -o FILE.olean
+to lean. The inspector prints extraConstNames in a clearly separate section;
+those code-generator names are not the reduce-extra test's input.
+
+No checker, Defs or candidate source has been modified by this investigation.
+The candidate's owner is applying the safe tactics and will inspect its newly
+compiled .olean before the next remote full check.
